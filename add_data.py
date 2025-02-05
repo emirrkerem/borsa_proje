@@ -19,6 +19,6 @@ with app.app_context():
     new_transaction2 = Transaction(stock_symbol="GOOGL", quantity=8, price=2900, transaction_type="buy")
     db.session.add(new_transaction2)
 
-    
+    db.session.commit()
 
 print("📊 Veriler başarıyla eklendi! 🚀")

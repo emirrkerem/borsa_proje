@@ -28,6 +28,30 @@ class Stock(db.Model):
         return f'<Stock {self.symbol}>'
     
 @app.route('/')
+def home():
+    return render_template('stocks.html')
+
+@app.route('/portfolio')
+def portfolio():
+    return render_template('portfolio.html')
+
+@app.route('/trade')
+def trade():
+    return render_template('trade.html')
+
+@app.route('/research')
+def research():
+    return render_template('research.html')
+
+@app.route('/hedef-getirin')
+def hedef_getirin():
+    return render_template('hedef_getirin.html')
+
+@app.route('/performance-reports')
+def performance_reports():
+    return render_template('performance_reports.html')
+    
+@app.route('/')
 def index():
     stocks = Stock.query.all()  # Veritabanındaki hisse senetlerini çek
     return render_template('stocks.html', stocks=stocks)  # stocks.html şablonunu yükle   

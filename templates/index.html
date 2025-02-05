@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hisse İşlem Paneli</title>
+</head>
+<body>
+    <h2>Yeni İşlem Ekle</h2>
+    <form action="/add_transaction" method="post">
+        <label for="stock_symbol">Hisse Sembolü:</label>
+        <input type="text" id="stock_symbol" name="stock_symbol" required>
+        <br><br>
+
+        <label for="quantity">Miktar:</label>
+        <input type="number" id="quantity" name="quantity" required>
+        <br><br>
+
+        <label for="price">Fiyat:</label>
+        <input type="text" id="price" name="price" required>
+        <br><br>
+
+        <label for="transaction_type">İşlem Türü:</label>
+        <select id="transaction_type" name="transaction_type">
+            <option value="buy">Alış</option>
+            <option value="sell">Satış</option>
+        </select>
+        <br><br>
+
+        <button type="submit">İşlemi Ekle</button>
+    </form>
+
+    <h2>İşlem Listesi</h2>
+    <ul>
+        {% for transaction in transactions %}
+        <li>
+            <strong>{{ transaction.stock_symbol }}</strong> - 
+            Miktar: {{ transaction.quantity }} - 
+            Fiyat: {{ transaction.price }} - 
+            Tür: {{ transaction.transaction_type }}
+
+            <!-- Güncelleme Formu -->
+            <form action="/edit_transaction/{{ transaction.id }}" method="post" style="display:inline;">
+                <input type="text" name="stock_symbol" value="{{ transaction.stock_symbol }}" required>
+                <input type="number" name="quantity" value="{{ transaction.quantity }}" required>
+                <input type="text" name="price" value="{{ transaction.price }}" required>
+                <select name="transaction_type">
+                    <option value="buy" {% if transaction.transaction_type == "buy" %}selected{% endif %}>Alış</option>
+                    <option value="sell" {% if transaction.transaction_type == "sell" %}selected{% endif %}>Satış</option>
+                </select>
+                <button type="submit">Güncelle</button>
+            </form>
+
+            <!-- Silme Butonu -->
+            <form action="/delete_transaction/{{ transaction.id }}" method="post" style="display:inline;">
+                <button type="submit" onclick="return confirm('Bu işlemi silmek istediğine emin misin?')">Sil</button>
+            </form>
+        </li>
+        {% endfor %}
+    </ul>
+</body>
+</html>

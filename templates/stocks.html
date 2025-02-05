@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+<head>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+{% block content %}
+<div class="container">
+    <h1>Hisse Senetleri</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Instrument</th>
+                <th>Son Fiyat</th>
+                <th>Değişim (%)</th>
+                <th>İşlemler</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for stock in stocks %}
+            <tr>
+                <td>{{ stock.symbol }}</td>
+                <td>{{ stock.current_price }}</td>
+                <td>{{ ((stock.current_price - stock.purchase_price) / stock.purchase_price * 100)|round(2) }}%</td>
+                <td>
+                    <button class="button btn-update" onclick="updateStock('{{ stock.id }}')">Güncelle</button>
+                    <button class="button btn-delete" onclick="deleteStock('{{ stock.id }}')">Sil</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

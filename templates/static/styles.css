@@ -1,0 +1,139 @@
+/* Sayfa Genel Stil */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #1a1a1a;
+    color: white;
+    margin: 0;
+    padding: 0;
+}
+
+/* Navbar Stili */
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #111;
+    padding: 15px 20px;
+}
+
+.navbar a {
+    color: white;
+    text-decoration: none;
+    margin: 0 15px;
+    font-size: 16px;
+}
+
+
+/* Arama Kutusu ve Bildirimler */
+.nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.search-box {
+    background-color: #2c2c2c;
+    border: 1px solid #444;
+    padding: 5px 10px;
+    color: white;
+    border-radius: 5px;
+}
+
+.search-icon {
+    color: #ccc;
+    cursor: pointer;
+}
+
+.notification {
+    position: relative;
+    cursor: pointer;
+}
+
+.notification .badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background-color: red;
+    color: white;
+    font-size: 12px;
+    padding: 3px 5px;
+    border-radius: 50%;
+}
+
+/* Trade Butonu */
+.trade-btn {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+.trade-btn:hover {
+    background-color: #0056b3;
+}
+
+.navbar a {
+    color: white;
+    text-decoration: none;
+    margin: 0 15px;
+}
+
+.navbar img {
+    width: 50px;
+    height: auto;
+}
+
+/* Sayfa genel stil */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f5f5f5;
+    color: black;
+    padding: 20px;
+}
+
+/* Hisse Senetleri Tablosu */
+.container {
+    width: 80%;
+    margin: auto;
+    background: #222;
+    padding: 20px;
+    border-radius: 8px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+th, td {
+    padding: 10px;
+    text-align: center;
+    border-bottom: 1px solid #444;
+}
+
+th {
+    background-color: #333;
+    color: white;
+}
+
+
+/* Butonlar */
+button {
+    padding: 8px 12px;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+.btn-update {
+    background-color: orange;
+    color: white;
+}
+
+.btn-delete {
+    background-color: red;
+    color: white;
+}

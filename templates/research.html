@@ -1,6 +1,43 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <h1>Research Sayfası</h1>
-    <p>Burası Research sayfasıdır.</p>
+<div class="container">
+    <h1 class="page-title">Research</h1>
+    <p>Hisse senetleri ve değişim yüzdeleri.</p>
+
+    <div class="row">
+        <!-- Sol Panel -->
+        <div class="col-md-3 sidebar">
+            <h3>My Lists <button id="addList" class="btn btn-sm btn-primary">+</button></h3>
+            <ul id="userLists">
+                <div id="listModal" class="modal">
+                    <div class="modal-content">
+                        <span class="close">&times;</span>
+                        <h2>Yeni Liste Oluştur</h2>
+                        <input type="text" id="listName" placeholder="Liste Adı">
+                        <button id="saveList" class="btn btn-success">Kaydet</button>
+                    </div>
+                </div>
+                
+
+        <!-- Sağ Panel - Hisse Tablosu -->
+        <div class="col-md-9">
+            <h2>Hisse Senetleri</h2>
+            <p>27 Symbols | Last Modified Feb 2, 2025</p>
+            <table class="table table-dark table-striped">
+                <thead>
+                    <tr>
+                        <th>INSTRUMENT</th>
+                        <th>LAST</th>
+                        <th>CHANGE %</th>
+                    </tr>
+                </thead>
+                <tbody id="stockTableBody">
+                    <!-- Hisseler buraya dinamik olarak eklenecek -->                   
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+    
 {% endblock %}

@@ -1,6 +1,73 @@
 {% extends "base.html" %}
 
 {% block content %}
+<div class="container"></div>
     <h1>Trade Sayfası</h1>
     <p>Burası Trade sayfasıdır.</p>
+
+     <!-- Yeni Trade Ekleme Formu -->
+     <form id="tradeForm">
+        <input type="text" id="symbol" placeholder="Hisse Sembolü">
+        <input type="number" id="quantity" placeholder="Miktar">
+        <input type="number" id="buy_price" placeholder="Alış Fiyatı">
+        <input type="number" id="sell_price" placeholder="Satış Fiyatı">
+        <button type="button" onclick="addTrade()">Ekle</button>
+    </form>
+
+    <!-- Trade Tablosu -->
+    <table class="table table-dark table-striped">
+        <thead>
+            <tr>
+                <th>Trades</th>
+                <th>Action</th>
+                <th>Miktar</th>
+                <th>Tarih</th>
+                <th>Fiyat</th>
+                <th>Toplam Maliyet</th>
+                <th>Çıkış Fiyatı</th>               
+                <th>Kâr/Zarar</th>                
+            </tr>
+        </thead>
+        <tbody id="tradeTableBody">
+            <!-- Eklenen işlemler buraya dinamik olarak eklenecek -->
+        </tbody>
+    </table>
+</div>
+
+<script>
+    function addTrade() {
+        let symbol = document.getElementById("symbol").value;
+        let quantity = document.getElementById("quantity").value;
+        let buyPrice = document.getElementById("buy_price").value;
+        let sellPrice = document.getElementById("sell_price").value;
+        let date = new Date().toISOString().split('T')[0]; // Bugünün tarihi
+
+        // Kâr/Zarar hesapla
+        let profitLoss = ((sellPrice - buyPrice) / buyPrice * 100).toFixed(2);
+        let profitClass = profitLoss >= 0 ? 'profit' : 'loss';
+
+        // Yeni satırı ekle
+        let table = document.getElementById("tradeTableBody");
+        let row = `<tr>
+                    <td>${date}</td>
+                    <td>${symbol}</td>
+                    <td>${quantity}</td>
+                    <td>${buyPrice}</td>
+                    <td>${sellPrice}</td>
+                    <td class="${profitClass}">${profitLoss}%</td>
+                    <td><button onclick="deleteRow(this)">Sil</button></td>
+                  </tr>`;
+        table.innerHTML += row;
+
+        // Formu temizle
+        document.getElementById("tradeForm").reset();
+    }
+
+    function deleteRow(button) {
+        button.parentElement.parentElement.remove();
+    }
+</script>
+
 {% endblock %}
+
+

@@ -54,7 +54,9 @@ def performance_reports():
 @app.route('/')
 def index():
     stocks = Stock.query.all()  # Veritabanındaki hisse senetlerini çek
-    return render_template('stocks.html', stocks=stocks)  # stocks.html şablonunu yükle   
+    return render_template('stocks.html', stocks=stocks)  # stocks.html şablonunu yükle 
+
+  
 
 # İşlem Geçmişi Tablosu
 class Transaction(db.Model):
@@ -157,6 +159,20 @@ def get_stocks():
     with app.app_context():
         stocks = Stock.query.all()
     return render_template('stocks.html', stocks=stocks)
+
+#listeye hisse ekleme
+@app.route('/list/<string:list_name>')
+def user_list(list_name):
+    stocks = Stock.query.filter_by(list_name=list_name).all()
+    return render_template("user_list.html", list_name=list_name, stocks=stocks)
+
+@app.route('/ad_stock', methods=['POST'])
+def ad_stock():
+    data = request.json
+    new_stock = Stock(symbol=data['symbol'], list_name=data['list_name'])
+    db.session.add(new_stock)
+    db.session.commit()
+    return jsonify({"message": "Hisse eklendi!"})
 
 #Yeni hisse ekleme
 @app.route('/add_stock', methods=['POST'])

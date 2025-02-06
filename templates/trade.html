@@ -1,19 +1,28 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container"></div>
-    <h1>Trade Sayfası</h1>
-    <p>Burası Trade sayfasıdır.</p>
-
-     <!-- Yeni Trade Ekleme Formu -->
-     <form id="tradeForm">
-        <input type="text" id="symbol" placeholder="Hisse Sembolü">
-        <input type="number" id="quantity" placeholder="Miktar">
-        <input type="number" id="buy_price" placeholder="Alış Fiyatı">
-        <input type="number" id="sell_price" placeholder="Satış Fiyatı">
-        <button type="button" onclick="addTrade()">Ekle</button>
+<div class="container mt-4">
+    <h2>Hisse Ekle</h2>
+    <form id="tradeForm" class="row g-2">
+        <div class="col-md-3">
+            <input type="text" class="form-control" placeholder="Hisse Sembolü" name="symbol">
+        </div>
+        <div class="col-md-3">
+            <select class="form-control" name="action">
+                <option value="buy">Alış</option>
+                <option value="sell">Satış</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <input type="number" class="form-control" placeholder="Miktar" name="quantity">
+        </div>
+        <div class="col-md-3">
+            <button type="submit" class="btn btn-primary">Ekle</button>
+        </div>
     </form>
+</div>
 
+<div class="container"></div>
     <!-- Trade Tablosu -->
     <table class="table table-dark table-striped">
         <thead>

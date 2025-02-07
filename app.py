@@ -1,36 +1,67 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
-from models import db, Stock
+import os
 import yfinance as yf
+db = SQLAlchemy()
+
+
 app = Flask(__name__)
 
-# SQLite veritabanı bağlantısını ayarla
-import os
-
+# 📌 Veritabanı Bağlantısı
 base_dir = os.path.abspath(os.path.dirname(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(base_dir, 'borsa.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-# Hisse Senetleri Tablosu
+# 📌 Hisse Senetleri Tablosu
 class Stock(db.Model):
-    id = db.Column(db.Integer, primary_key=True)  # Otomatik ID
-    symbol = db.Column(db.String(10), nullable=False)  # Hisse sembolü (AAPL, TSLA vb.)
-    quantity = db.Column(db.Integer, nullable=False)  # Hisse adedi
-    purchase_price = db.Column(db.Float, nullable=False)  # Alış fiyatı
-    current_price = db.Column(db.Float, nullable=True)  # Güncel fiyat
-    total_value = db.Column(db.Float, nullable=True)  # Güncel toplam değer
-    purchase_date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)  # Satın alma tarihi
-    sell_date = db.Column(db.DateTime, nullable=True)  # Satış tarihi (isteğe bağlı)
+    id = db.Column(db.Integer, primary_key=True)
+    symbol = db.Column(db.String(10), nullable=False)
+    quantity = db.Column(db.Integer, nullable=False)
+    purchase_price = db.Column(db.Float, nullable=False)
+    current_price = db.Column(db.Float, nullable=True)
+    total_value = db.Column(db.Float, nullable=True)
+    purchase_date = db.Column(db.DateTime, default=datetime.utcnow)
+    sell_date = db.Column(db.DateTime, nullable=True)
 
     def __repr__(self):
         return f'<Stock {self.symbol}>'
-    
-@app.route('/')
-def home():
-    return render_template('stocks.html')
 
+#trade sayfası kaybolmasın diye 
+
+class Trade(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    symbol = db.Column(db.String(10), nullable=False)
+    action = db.Column(db.String(10), nullable=False)  # "Alış" veya "Satış"
+    quantity = db.Column(db.Integer, nullable=False)
+    price = db.Column(db.Float, nullable=False)
+    date = db.Column(db.DateTime, default=db.func.current_timestamp())
+
+    def __repr__(self):
+        return f"<Trade {self.symbol} {self.action} {self.quantity}>"
+         
+
+# 📌 İşlem Geçmişi Tablosu
+class Transaction(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    stock_symbol = db.Column(db.String(10), nullable=False)
+    quantity = db.Column(db.Integer, nullable=False)
+    price = db.Column(db.Float, nullable=False)
+    transaction_type = db.Column(db.String(10), nullable=False)  # 'buy' veya 'sell'
+
+# 📌 Döviz Kuru Tablosu
+class ExchangeRate(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    usd_to_try = db.Column(db.Float, nullable=False)
+
+# 📌 Ana Sayfa
+@app.route('/')
+def index():
+    stocks = Stock.query.all()
+    return render_template('stocks.html', stocks=stocks)
+
+# 📌 Sayfa Yönlendirmeleri
 @app.route('/portfolio')
 def portfolio():
     return render_template('portfolio.html')
@@ -50,64 +81,72 @@ def hedef_getirin():
 @app.route('/performance-reports')
 def performance_reports():
     return render_template('performance_reports.html')
-    
-@app.route('/')
-def index():
-    stocks = Stock.query.all()  # Veritabanındaki hisse senetlerini çek
-    return render_template('stocks.html', stocks=stocks)  # stocks.html şablonunu yükle 
 
-  
-
-# İşlem Geçmişi Tablosu
-class Transaction(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    stock_symbol = db.Column(db.String(10), nullable=False)
-    quantity = db.Column(db.Integer, nullable=False)
-    price = db.Column(db.Float, nullable=False)
-    transaction_type = db.Column(db.String(10), nullable=False)  # 'buy' veya 'sell'
-
-# Döviz Kuru Tablosu
-class ExchangeRate(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    usd_to_try = db.Column(db.Float, nullable=False)
-
-#transactions ekledik     
+# 📌 API - İşlem Geçmişini Listeleme
 @app.route('/transactions', methods=['GET'])
 def get_transactions():
-    with app.app_context():
-        transactions = Transaction.query.all()
-        transaction_list = [
-            {
-                "stock_symbol": transaction.stock_symbol,
-                "quantity": transaction.quantity,
-                "price": transaction.price,
-                "transaction_type": transaction.transaction_type
-            }
-            for transaction in transactions
-        ]
+    transactions = Transaction.query.all()
+    transaction_list = [
+        {
+            "stock_symbol": t.stock_symbol,
+            "quantity": t.quantity,
+            "price": t.price,
+            "transaction_type": t.transaction_type
+        }
+        for t in transactions
+    ]
     return jsonify(transaction_list)
 
-# API - Yeni işlem ekleme
+#trade ekledik
+@app.route("/add_trade", methods=["POST"])
+def add_trade():
+    data = request.json
+    new_trade = Trade(
+        symbol=data["symbol"],
+        action=data["action"],
+        quantity=data["quantity"],
+        price=data["price"]
+    )
+    db.session.add(new_trade)
+    db.session.commit()
+    return jsonify({"message": "Trade başarıyla eklendi!"}), 201
+
+@app.route('/trades', methods=['GET'])
+def get_trades():
+    trades = Trade.query.all()
+    trade_list = [
+        {
+            "symbol": trade.symbol,
+            "action": trade.action,
+            "quantity": trade.quantity,
+            "price": trade.price,
+            "date": trade.date.strftime("%Y-%m-%d %H:%M:%S")
+        }
+        for trade in trades
+    ]
+    return jsonify(trade_list)
+
+
+# 📌 API - Yeni İşlem Ekleme
 @app.route('/add_transaction', methods=['POST'])
 def add_transaction():
-    with app.app_context():
-        stock_symbol = request.form['stock_symbol']
-        quantity = int(request.form['quantity'])
-        price = float(request.form['price'])
-        transaction_type = request.form['transaction_type']
+    stock_symbol = request.form['stock_symbol']
+    quantity = int(request.form['quantity'])
+    price = float(request.form['price'])
+    transaction_type = request.form['transaction_type']
 
-        new_transaction = Transaction(
-            stock_symbol=stock_symbol,
-            quantity=quantity,
-            price=price,
-            transaction_type=transaction_type
-        )
-        db.session.add(new_transaction)
-        db.session.commit()
-
+    new_transaction = Transaction(
+        stock_symbol=stock_symbol,
+        quantity=quantity,
+        price=price,
+        transaction_type=transaction_type
+    )
+    db.session.add(new_transaction)
+    db.session.commit()
+    
     return "✅ İşlem başarıyla eklendi!", 201
 
-# 📌 6️⃣ API ile JSON Formatında Hisse Listesi
+# 📌 API - Hisse Senetlerini JSON Formatında Listeleme
 @app.route('/api/stocks')
 def api_get_stocks():
     stocks = Stock.query.all()
@@ -125,25 +164,22 @@ def api_get_stocks():
     ]
     return jsonify(stocks_json)
 
-# İşlem Düzenleme (Update)
+# 📌 API - İşlem Güncelleme (Update)
 @app.route('/edit_transaction/<int:id>', methods=['POST'])
 def edit_transaction(id):
-    with app.app_context():
-        transaction = Transaction.query.get(id)
-        if not transaction:
-            return "❌ İşlem bulunamadı!", 404
+    transaction = Transaction.query.get(id)
+    if not transaction:
+        return "❌ İşlem bulunamadı!", 404
 
-        # Formdan gelen yeni verileri al
-        transaction.stock_symbol = request.form['stock_symbol']
-        transaction.quantity = int(request.form['quantity'])
-        transaction.price = float(request.form['price'])
-        transaction.transaction_type = request.form['transaction_type']
-
-        db.session.commit()
+    transaction.stock_symbol = request.form['stock_symbol']
+    transaction.quantity = int(request.form['quantity'])
+    transaction.price = float(request.form['price'])
+    transaction.transaction_type = request.form['transaction_type']
+    
+    db.session.commit()
     return "✅ İşlem başarıyla güncellendi!", 200
 
-
-# İşlem Silme (Delete)
+# 📌 API - Hisse Silme
 @app.route('/delete_stock/<int:stock_id>', methods=['POST'])
 def delete_stock(stock_id):
     stock = Stock.query.get(stock_id)
@@ -151,67 +187,21 @@ def delete_stock(stock_id):
         db.session.delete(stock)
         db.session.commit()
     
-    return redirect(url_for('get_stocks'))
+    return redirect(url_for('index'))
 
-# Hisse Senetlerini Listeleme
-@app.route('/stocks', methods=['GET'])
-def get_stocks():
-    with app.app_context():
-        stocks = Stock.query.all()
-    return render_template('stocks.html', stocks=stocks)
-
-#listeye hisse ekleme
-@app.route('/list/<string:list_name>')
-def user_list(list_name):
-    stocks = Stock.query.filter_by(list_name=list_name).all()
-    return render_template("user_list.html", list_name=list_name, stocks=stocks)
-
-@app.route('/ad_stock', methods=['POST'])
-def ad_stock():
-    data = request.json
-    new_stock = Stock(symbol=data['symbol'], list_name=data['list_name'])
-    db.session.add(new_stock)
-    db.session.commit()
-    return jsonify({"message": "Hisse eklendi!"})
-
-#Yeni hisse ekleme
-@app.route('/add_stock', methods=['POST'])
-def add_stock():
-    symbol = request.form['symbol']
-    quantity = int(request.form['quantity'])
-    purchase_price = float(request.form['purchase_price'])
-    
-    new_stock = Stock(symbol=symbol, quantity=quantity, purchase_price=purchase_price, current_price=purchase_price)
-    db.session.add(new_stock)
-    db.session.commit()
-
-    return redirect(url_for('get_stocks'))
-
-# 📌 4️⃣ Hisse Güncelleme (Fiyat Güncelleme)
-@app.route('/update_stock/<int:stock_id>', methods=['POST'])
-def update_stock(stock_id):
-    stock = Stock.query.get(stock_id)
-    if stock:
-        stock.current_price = float(request.form['new_price'])
-        db.session.commit()
-    
-    return redirect(url_for('get_stocks'))
-
-#satış tarihi
+# 📌 API - Hisse Satış Tarihini Güncelleme
 @app.route('/sell_stock/<int:id>', methods=['POST'])
 def sell_stock(id):
-    with app.app_context():
-        stock = Stock.query.get(id)
+    stock = Stock.query.get(id)
+    if not stock:
+        return "❌ Hisse bulunamadı!", 404
 
-        if not stock:
-            return "❌ Hisse bulunamadı!", 404
-
-        stock.sell_date = datetime.utcnow()  # Satış tarihini güncelle
-        db.session.commit()
+    stock.sell_date = datetime.utcnow()
+    db.session.commit()
 
     return "✅ Hisse satıldı ve satış tarihi kaydedildi!", 200
 
-# 📌 Hisse fiyatlarını almak için API endpoint
+# 📌 API - Canlı Hisse Fiyatlarını Getirme (Yahoo Finance)
 @app.route("/get_stock_price", methods=["GET"])
 def get_stock_price():
     symbol = request.args.get("symbol")
@@ -221,32 +211,26 @@ def get_stock_price():
     try:
         stock = yf.Ticker(symbol)
         current_price = stock.history(period="1d")["Close"].iloc[-1]
-        return jsonify({"symbol": symbol, "price": current_price})
+        return jsonify({"symbol": symbol, "price": float(current_price)})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-#test için
+# 📌 Test için Veritabanı Kontrolü
 @app.route('/test_db')
 def test_db():
-    with app.app_context():
-        stocks = Stock.query.all()
+    stocks = Stock.query.all()
+    if not stocks:
+        return "⚠️ Veritabanında hiç hisse senedi yok!"
+    
+    response = "<h2>📊 Veritabanındaki Hisse Senetleri:</h2><ul>"
+    for stock in stocks:
+        response += f"<li>ID: {stock.id}, Sembol: {stock.symbol}, Miktar: {stock.quantity}, Alış Fiyatı: {stock.purchase_price}, Güncel Fiyat: {stock.current_price}</li>"
+    response += "</ul>"
 
-        if not stocks:
-            return "⚠️ Veritabanında hiç hisse senedi yok!"
-        
-        response = "<h2>📊 Veritabanındaki Hisse Senetleri:</h2><ul>"
-        for stock in stocks:
-            response += f"<li>ID: {stock.id}, Sembol: {stock.symbol}, Miktar: {stock.quantity}, Alış Fiyatı: {stock.purchase_price}, Güncel Fiyat: {stock.current_price}</li>"
-        response += "</ul>"
+    return response
 
-        return response
-
-  
-# Veritabanını oluştur
+# 📌 Veritabanını oluştur ve uygulamayı çalıştır
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
     app.run(debug=True)
-
-
-

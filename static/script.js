@@ -1,124 +1,145 @@
 document.addEventListener("DOMContentLoaded", function () {
-    // 📌 My Lists Kısmı
-    const addListBtn = document.getElementById("addList");
-    const modal = document.getElementById("listModal");
-    const closeModal = document.querySelector(".close");
-    const saveListBtn = document.getElementById("saveList");
-    const listNameInput = document.getElementById("listName");
-    const userLists = document.getElementById("userLists");
-
-    if (addListBtn) {
-        addListBtn.addEventListener("click", function () {
-            modal.style.display = "block";
-        });
-
-        closeModal.addEventListener("click", function () {
-            modal.style.display = "none";
-        });
-
-        saveListBtn.addEventListener("click", function () {
-            const listName = listNameInput.value.trim();
-            if (listName !== "") {
-                const li = document.createElement("li");
-                li.innerHTML = `<a href="/list/${listName}">${listName}</a>`;
-                userLists.appendChild(li);
-                modal.style.display = "none";
-                listNameInput.value = "";
-            }
-        });
-    }
-
     // 📌 Trade İşlemleri
     const tradeTable = document.querySelector("#tradeTable tbody");
     const addTradeBtn = document.querySelector("#addTrade");
 
-    if (!tradeTable || !addTradeBtn) return; // Eğer tradeTable veya buton bulunamazsa kod çalışmaz.
+    if (!tradeTable || !addTradeBtn) return;
 
+    // 📌 Hisse sembolü girildiğinde fiyatı otomatik getir
+    document.getElementById("symbol").addEventListener("change", function () {
+        fetchStockPrice();
+    });
+
+    function fetchStockPrice() {
+        let symbol = document.getElementById("symbol").value.trim();
+        if (!symbol) return;
+
+        fetch(`/api/get_price/${symbol}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    document.getElementById("price").value = "Hata!";
+                } else {
+                    document.getElementById("price").value = data.price.toFixed(2);
+                }
+            })
+            .catch(error => console.error("Fiyat alınamadı:", error));
+    }
+
+    // 📌 Hisseyi ekle
     addTradeBtn.addEventListener("click", function () {
-        const symbol = document.querySelector("#symbol").value.trim();
-        const action = document.querySelector("#action").value;
-        const quantity = parseFloat(document.querySelector("#quantity").value);
-        let price = parseFloat(document.querySelector("#price").value);
-        const date = new Date().toLocaleString(); // Güncel tarih al
-
-        if (symbol === "" || isNaN(quantity) || isNaN(price)) {
-            alert("Lütfen geçerli değerler girin.");
+        let symbol = document.getElementById("symbol").value.trim();
+        let action = document.getElementById("action").value;
+        let quantity = parseFloat(document.getElementById("quantity").value);
+        let price = parseFloat(document.getElementById("price").value);
+        let date = new Date().toLocaleString();
+        
+        if (!symbol || isNaN(quantity) || isNaN(price)) {
+            alert("Lütfen geçerli değerler girin!");
             return;
         }
 
-        // 📌 Canlı fiyat API bağlanana kadar sabit bir değer kullanılacak
+    //trade için güncelledik    
+    document.getElementById("addTradeButton").addEventListener("click", function () {
+        let symbol = document.getElementById("symbol").value;
+        let action = document.getElementById("action").value;
+        let quantity = document.getElementById("quantity").value;
+        let price = document.getElementById("price").value;    
+        
+            fetch("/add_trade", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ symbol, action, quantity, price })
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                location.reload();  // Sayfayı yenileyerek yeni eklenen hisseleri göster
+            });
+        });
+        
+
+        // 📌 Kâr / Zarar hesapla
         fetch(`/api/get_price/${symbol}`)
             .then(response => response.json())
             .then(data => {
                 let currentPrice = parseFloat(data.price);
-                let totalCost = (quantity * entryPrice).toFixed(2);
-                let profitLoss = ((currentPrice - entryPrice) * quantity).toFixed(2);
+                let totalCost = (quantity * price).toFixed(2);
+                let profitLoss = ((currentPrice - price) * quantity).toFixed(2);
                 let profitClass = profitLoss >= 0 ? 'profit' : 'loss';
 
-        // Hisse sembolü girildiğinde fiyatı otomatik olarak getir
-function fetchStockPrice() {
-    let symbol = document.getElementById("stockSymbol").value;
-    if (!symbol) return;
+                // 📌 Yeni satır ekle
+                const newRow = document.createElement("tr");
+                newRow.innerHTML = `
+                    <td>${symbol}</td>
+                    <td>${action}</td>
+                    <td>${quantity}</td>
+                    <td>${date}</td>
+                    <td>${price.toFixed(2)}</td>
+                    <td>${currentPrice.toFixed(2)}</td>
+                    <td>${totalCost}</td>
+                    <td class="${profitClass}">${profitLoss}</td>
+                `;
 
-    fetch(`/get_stock_price?symbol=${symbol}`)
+                tradeTable.appendChild(newRow);
+
+                // 📌 Formu temizle
+                resetTradeForm();
+            })
+            .catch(error => console.error("Fiyat alınamadı:", error));
+    });
+
+    function resetTradeForm() {
+        document.getElementById("symbol").value = "";
+        document.getElementById("quantity").value = "";
+        document.getElementById("price").value = "";
+    }
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+    fetch("/trades")  // Sayfa açıldığında kayıtlı işlemleri getir
         .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                document.getElementById("price").value = "Hata!";
-            } else {
-                document.getElementById("price").value = data.price.toFixed(2);
-            }
-        })
-        .catch(error => console.error("Hata:", error));
+        .then(trades => {
+            let table = document.getElementById("tradeTableBody");
+            table.innerHTML = ""; // Önce tabloyu temizle
+            trades.forEach(trade => {
+                let row = table.insertRow();
+                row.innerHTML = `
+                    <td>${trade.symbol}</td>
+                    <td>${trade.action}</td>
+                    <td>${trade.quantity}</td>
+                    <td>${trade.price}</td>
+                    <td>${trade.date}</td>
+                `;
+            });
+        });
+});
 
-// Hisseyi ekle
-function addTrade() {
-    let symbol = document.getElementById("stockSymbol").value;
+// Yeni hisse eklemek için API çağrısı
+document.getElementById("addTradeBtn").addEventListener("click", function () {
+    let symbol = document.getElementById("symbol").value;
     let action = document.getElementById("action").value;
     let quantity = document.getElementById("quantity").value;
     let price = document.getElementById("price").value;
-    let date = new Date().toLocaleString();
-    let totalCost = (quantity * price).toFixed(2);
 
     if (!symbol || !quantity || !price) {
         alert("Lütfen tüm alanları doldurun!");
         return;
     }
-}
-       
 
-        
-
-        // Toplam maliyet hesapla
-        const totalCost = quantity * price;
-
-        // Kâr / Zarar hesapla
-        let profitLoss = action === "Satış" ? (quantity * (price - currentPrice)) : 0;
-
-        // Yeni satır ekle
-        const newRow = document.createElement("tr");
-        newRow.innerHTML = `
-            <td>${symbol}</td>
-            <td>${action}</td>
-            <td>${quantity}</td>
-            <td>${date}</td>
-            <td>${entryPrice.toFixed(2)}</td>
-            <td>${currentPrice.toFixed(2)}</td>
-            <td>${price.toFixed(2)}</td>
-            <td>${totalCost.toFixed(2)}</td>
-            <td>${currentPrice.toFixed(2)}</td>
-            <td class="${profitLoss >= 0 ? 'profit' : 'loss'}">${profitLoss.toFixed(2)}</td>
-        `;
-
-        tradeTable.appendChild(newRow);
-
-        // Formu temizle
-        resetTradeForm();
+    fetch("/add_trade", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            symbol: symbol,
+            action: action,
+            quantity: parseInt(quantity),
+            price: parseFloat(price)
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert(data.message);
+        location.reload(); // Sayfayı yenileyerek tabloyu güncelle
     });
-
-    function resetTradeForm() {
-        document.querySelector("#symbol").value = "";
-        document.querySelector("#quantity").value = "";
-        document.querySelector("#price").value = "";
-    }
 });

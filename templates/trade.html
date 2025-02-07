@@ -3,16 +3,15 @@
 {% block content %}
 <div class="container mt-4">
     <h2>Hisse Ekle</h2>
-    <form id="tradeForm">
-        <input type="text" id="stockSymbol" placeholder="Hisse Sembolü" oninput="fetchStockPrice()">
-        <select id="action">
-            <option value="Alış">Alış</option>
-            <option value="Satış">Satış</option>
-        </select>
-        <input type="number" id="quantity" placeholder="Miktar">
-        <input type="text" id="price" placeholder="Fiyat" readonly>
-        <button type="button" onclick="addTrade()">Ekle</button>
-    </form>
+    <form id="tradeForm" class="row align-items-center g-2">
+        <div class="col-md-3">
+            <input type="text" class="form-control" placeholder="Hisse Sembolü" name="symbol" id="symbol" oninput="fetchStockPrice()">
+        </div>
+        <div class="col-md-2">
+            <select class="form-control" name="action" id="action">
+                <option value="Alış">Alış</option>
+                <option value="Satış">Satış</option>
+            </select>
         </div>
         <div class="col-md-2">
             <input type="number" class="form-control" placeholder="Miktar" name="quantity" id="quantity">
@@ -20,42 +19,16 @@
         <div class="col-md-2">
             <input type="number" step="0.01" class="form-control" placeholder="Giriş Fiyatı" name="entry_price" id="entry_price">
         </div>
-        <div class="col-md-2 d-flex justify-content-center">
-            <button type="button" class="btn btn-primary" id="addTrade">Ekle</button>      
+        <div class="col-md-3 d-flex justify-content-center">
+            <button type="button" class="btn btn-primary" id="addTrade">Ekle</button>
         </div>
     </form>
 </div>
+            <!-- JavaScript burada satır ekleyecek -->
+        </tbody>
+    </table>    
 
-<!-- Hisse Fiyatını Getir -->
-<div class="stock-price-container">
-    <input type="text" id="stockSymbol" placeholder="Hisse Sembolü">
-    <button class="btn btn-primary" onclick="getStockPrice()">Fiyatı Getir</button>
-    <p>Güncel Fiyat: <span id="stockPrice">-</span></p>
-</div>
-
-<!-- JavaScript ile API'den Fiyat Çekme -->
-<script>
-    function getStockPrice() {
-        let symbol = document.getElementById("stockSymbol").value;
-        if (!symbol) {
-            alert("Lütfen bir hisse sembolü girin!");
-            return;
-        }
-
-        fetch(`/get_stock_price?symbol=${symbol}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    alert("Hata: " + data.error);
-                } else {
-                    document.getElementById("stockPrice").innerText = "$" + data.price;
-                }
-            })
-            .catch(error => console.error("Hata:", error));
-    }
-</script>
-
-    <!-- Trade Tablosu -->
+<!-- Trade Tablosu -->
 <div class="container mt-4">
     <table class="table table-dark table-striped" id="tradeTable">
         <thead>
@@ -64,45 +37,81 @@
                 <th>Action</th>
                 <th>Miktar</th>
                 <th>Tarih</th>
-                <th>Fiyat</th>
+                <th>Giriş Fiyatı</th>
+                <th>Hisse Fiyatı (API)</th>
                 <th>Toplam Maliyet</th>
-                <th>Çıkış Fiyatı</th>               
-                <th>Kâr/Zarar</th>                
+                <th>Kâr/Zarar</th>
+                <th>Sil</th>
             </tr>
         </thead>
         <tbody></tbody>
-            <!-- Eklenen işlemler buraya dinamik olarak eklenecek -->
-        </tbody>
     </table>
 </div>
 
 <script>
-    function addTrade() {
-        let symbol = document.getElementById("symbol").value;
-        let quantity = document.getElementById("quantity").value;
-        let buyPrice = document.getElementById("buy_price").value;
-        let sellPrice = document.getElementById("sell_price").value;
-        let date = new Date().toISOString().split('T')[0]; // Bugünün tarihi
+    // 📌 Hisse sembolü girildiğinde fiyatı otomatik getir
+    function fetchStockPrice() {
+        let symbol = document.getElementById("symbol").value.trim();
+        if (!symbol) return;
 
-        // Kâr/Zarar hesapla
-        let profitLoss = ((sellPrice - buyPrice) / buyPrice * 100).toFixed(2);
-        let profitClass = profitLoss >= 0 ? 'profit' : 'loss';
+        fetch(`/get_stock_price?symbol=${symbol}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    document.getElementById("entry_price").value = "Hata!";
+                } else {
+                    document.getElementById("entry_price").value = data.price.toFixed(2);
+                }
+            })
+            .catch(error => console.error("Hata:", error));
+    }
 
-        // Yeni satırı ekle
-        let table = document.getElementById("tradeTableBody");
-        let row = `<tr>
-                    <td>${date}</td>
+    // 📌 Hisseyi ekle
+    document.getElementById("addTrade").addEventListener("click", function () {
+        let symbol = document.getElementById("symbol").value.trim();
+        let action = document.getElementById("action").value;
+        let quantity = parseFloat(document.getElementById("quantity").value);
+        let entryPrice = parseFloat(document.getElementById("entry_price").value);
+        let date = new Date().toLocaleString();
+
+        if (!symbol || isNaN(quantity) || isNaN(entryPrice)) {
+            alert("Lütfen geçerli değerler girin!");
+            return;
+        }
+
+        // 📌 API'den güncel fiyatı al ve ekle
+        fetch(`/get_stock_price?symbol=${symbol}`)
+            .then(response => response.json())
+            .then(data => {
+                let currentPrice = parseFloat(data.price);
+                let totalCost = (quantity * entryPrice).toFixed(2);
+                let profitLoss = ((currentPrice - entryPrice) * quantity).toFixed(2);
+                let profitClass = profitLoss >= 0 ? 'profit' : 'loss';
+
+                // 📌 Yeni satır ekle
+                let newRow = document.createElement("tr");
+                newRow.innerHTML = `
                     <td>${symbol}</td>
+                    <td>${action}</td>
                     <td>${quantity}</td>
-                    <td>${buyPrice}</td>
-                    <td>${sellPrice}</td>
-                    <td class="${profitClass}">${profitLoss}%</td>
-                    <td><button onclick="deleteRow(this)">Sil</button></td>
-                  </tr>`;
-        table.innerHTML += row;
+                    <td>${date}</td>
+                    <td>${entryPrice.toFixed(2)}</td>
+                    <td>${currentPrice.toFixed(2)}</td>
+                    <td>${totalCost}</td>
+                    <td class="${profitClass}">${profitLoss}</td>
+                    <td><button onclick="deleteRow(this)" class="btn btn-danger">Sil</button></td>
+                `;
 
-        // Formu temizle
-        document.getElementById("tradeForm").reset();
+                document.querySelector("#tradeTable tbody").appendChild(newRow);
+                resetTradeForm();
+            })
+            .catch(error => console.error("Fiyat alınamadı:", error));
+    });
+
+    function resetTradeForm() {
+        document.getElementById("symbol").value = "";
+        document.getElementById("quantity").value = "";
+        document.getElementById("entry_price").value = "";
     }
 
     function deleteRow(button) {
@@ -111,5 +120,3 @@
 </script>
 
 {% endblock %}
-
-

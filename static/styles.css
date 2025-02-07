@@ -23,6 +23,10 @@ body {
     font-size: 16px;
 }
 
+.navbar img {
+    width: 50px;
+    height: auto;
+}
 
 /* Arama Kutusu ve Bildirimler */
 .nav-actions {
@@ -74,25 +78,6 @@ body {
     background-color: #0056b3;
 }
 
-.navbar a {
-    color: white;
-    text-decoration: none;
-    margin: 0 15px;
-}
-
-.navbar img {
-    width: 50px;
-    height: auto;
-}
-
-/* Sayfa genel stil */
-body {
-    font-family: Arial, sans-serif;
-    background-color: #f5f5f5;
-    color: black;
-    padding: 20px;
-}
-
 /* Hisse Senetleri Tablosu */
 .container {
     width: 80%;
@@ -118,7 +103,6 @@ th {
     background-color: #333;
     color: white;
 }
-
 
 /* Butonlar */
 button {

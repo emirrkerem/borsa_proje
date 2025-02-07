@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from models import db, Stock
-
+import yfinance as yf
 app = Flask(__name__)
 
 # SQLite veritabanı bağlantısını ayarla
@@ -210,6 +210,20 @@ def sell_stock(id):
         db.session.commit()
 
     return "✅ Hisse satıldı ve satış tarihi kaydedildi!", 200
+
+# 📌 Hisse fiyatlarını almak için API endpoint
+@app.route("/get_stock_price", methods=["GET"])
+def get_stock_price():
+    symbol = request.args.get("symbol")
+    if not symbol:
+        return jsonify({"error": "Hisse sembolü gerekli!"}), 400
+
+    try:
+        stock = yf.Ticker(symbol)
+        current_price = stock.history(period="1d")["Close"].iloc[-1]
+        return jsonify({"symbol": symbol, "price": current_price})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 #test için
 @app.route('/test_db')
